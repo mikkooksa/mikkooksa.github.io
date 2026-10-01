@@ -2,143 +2,302 @@
 <html lang="fi">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Kelikooste</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Sääennuste: FMI vs Yr</title>
   <style>
     :root {
-      --bg: #0f172a;
-      --card-bg: #1e293b;
-      --text: #f8fafc;
-      --text-dim: #94a3b8;
-      --accent: #38bdf8;
+      --bg: #0b0f19;
+      --card: #151d30;
+      --border: #243049;
+      --text: #f1f5f9;
+      --muted: #8492a6;
+      --fmi: #38bdf8;
+      --yr: #fb923c;
+      --rain: #60a5fa;
+      --wind: #34d399;
     }
+    * { box-sizing: border-box; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: var(--bg);
+      background-color: var(--bg);
       color: var(--text);
       margin: 0;
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+      padding: 8px;
+      font-size: 13px;
     }
     .container {
-      width: 100%;
-      max-width: 480px;
+      max-width: 540px;
+      margin: 0 auto;
     }
     header {
-      margin-bottom: 20px;
+      background: var(--card);
+      padding: 10px 12px;
+      border-radius: 8px;
+      margin-bottom: 8px;
       display: flex;
       justify-content: space-between;
-      align-items: baseline;
+      align-items: center;
+      border: 1px solid var(--border);
     }
-    h1 { margin: 0; font-size: 1.5rem; }
-    .station-name { color: var(--accent); font-size: 0.9rem; }
-    .card {
-      background: var(--card-bg);
-      border-radius: 12px;
-      padding: 18px;
-      margin-bottom: 12px;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+    select {
+      background: var(--bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 14px;
+      outline: none;
     }
-    .temp-hero {
-      font-size: 3rem;
+    .gps-btn {
+      background: #0284c7;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 12px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .legend-bar {
+      display: flex;
+      justify-content: space-around;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px;
+      margin-bottom: 8px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .legend-fmi { color: var(--fmi); }
+    .legend-yr { color: var(--yr); }
+
+    .day-header {
+      background: #111a2e;
+      color: #93c5fd;
+      padding: 7px 10px;
+      font-weight: 700;
+      border-radius: 4px;
+      margin: 12px 0 4px 0;
+      text-transform: uppercase;
+      font-size: 12px;
+      letter-spacing: 0.5px;
+    }
+    .forecast-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--card);
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .forecast-table th {
+      background: #1a253c;
+      color: var(--muted);
+      font-weight: 600;
+      padding: 6px 4px;
+      font-size: 11px;
+      text-align: center;
+      border-bottom: 1px solid var(--border);
+    }
+    .forecast-table td {
+      padding: 8px 4px;
+      text-align: center;
+      border-bottom: 1px solid #1c273e;
+      font-size: 12px;
+    }
+    .forecast-table tr:last-child td { border-bottom: none; }
+    .col-time {
       font-weight: 700;
       color: var(--text);
-      line-height: 1;
-      margin: 8px 0;
+      width: 14%;
     }
-    .grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
+    .temp-fmi { color: var(--fmi); font-weight: 700; width: 14%; }
+    .temp-yr { color: var(--yr); font-weight: 700; width: 14%; }
+    .rain-cell { width: 14%; font-size: 11px; }
+    .rain-val { color: var(--rain); font-weight: 600; }
+    .rain-dry { color: #475569; }
+    .wind-cell { width: 22%; font-size: 11px; color: var(--wind); }
+
+    .radar-box {
+      margin-top: 14px;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--border);
     }
-    .metric {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-    .label { font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; }
-    .val { font-size: 1.1rem; font-weight: 600; }
-    .radar-frame {
+    iframe {
       width: 100%;
-      height: 320px;
+      height: 300px;
       border: none;
-      border-radius: 12px;
-      margin-top: 6px;
+      display: block;
     }
-    .updated {
+    .footer-note {
       text-align: center;
-      font-size: 0.75rem;
-      color: var(--text-dim);
-      margin-top: 16px;
+      margin: 14px 0;
+      color: var(--muted);
+      font-size: 11px;
+    }
+    .loading {
+      text-align: center;
+      padding: 30px;
+      color: var(--muted);
     }
   </style>
 </head>
 <body>
   <div class="container">
     <header>
-      <h1>Sää & Keli</h1>
-      <span id="locName" class="station-name">Helsinki / Espoo</span>
+      <select id="citySelect" onchange="changeCity()">
+        <option value="60.17,24.94">Helsinki</option>
+        <option value="60.20,24.65">Espoo</option>
+        <option value="60.30,25.04">Vantaa</option>
+        <option value="61.50,23.76">Tampere</option>
+        <option value="60.45,22.26">Turku</option>
+        <option value="65.01,25.47">Oulu</option>
+        <option value="62.24,25.74">Jyväskylä</option>
+        <option value="60.98,25.66">Lahti</option>
+        <option value="62.89,27.68">Kuopio</option>
+        <option value="61.69,27.27">Mikkeli</option>
+        <option value="66.50,25.72">Rovaniemi</option>
+      </select>
+      <button class="gps-btn" onclick="useGeolocation()">📍 Sijainti</button>
     </header>
 
-    <div class="card">
-      <div class="label">Lämpötila nyt</div>
-      <div class="temp-hero" id="curTemp">-- °C</div>
-      <div class="grid" style="margin-top: 14px;">
-        <div class="metric">
-          <span class="label">Tuuli</span>
-          <span class="val" id="curWind">-- m/s</span>
-        </div>
-        <div class="metric">
-          <span class="label">Tuulenpuuska</span>
-          <span class="val" id="curGust">-- m/s</span>
-        </div>
-        <div class="metric">
-          <span class="label">Kosteus</span>
-          <span class="val" id="curHumidity">-- %</span>
-        </div>
-        <div class="metric">
-          <span class="label">Sademäärä (1h)</span>
-          <span class="val" id="curPrecip">-- mm</span>
-        </div>
-      </div>
+    <!-- Selitevärit -->
+    <div class="legend-bar">
+      <span class="legend-fmi">■ FMI (Suomi)</span>
+      <span class="legend-yr">■ Yr (Norja)</span>
     </div>
 
-    <div class="card" style="padding: 12px;">
-      <div class="label" style="margin-bottom: 8px;">Sadetutka</div>
-      <iframe class="radar-frame" src="https://www.rainviewer.com/map.html?loc=60.1699,24.9384,8&oFa=0&oC=1&oU=0&oCl=0&c=1&o=83&layer=radar&sm=1&sn=1"></iframe>
+    <div id="forecastContent">
+      <div class="loading">Haetaan FMI & Yr -ennusteita...</div>
     </div>
 
-    <div class="updated" id="updateTime">Päivitetään tietoja...</div>
+    <!-- Sadetutka -->
+    <div class="radar-box">
+      <iframe id="radarFrame" src="https://www.rainviewer.com/map.html?loc=60.17,24.94,8&oFa=0&oC=1&oU=0&oCl=0&c=1&o=83&layer=radar&sm=1&sn=1"></iframe>
+    </div>
+
+    <div class="footer-note" id="updateNotice">Lähde: Ilmatieteen laitos (DMI/FMI) & MET Norway (Yr)</div>
   </div>
 
   <script>
-    const LAT = 60.17;
-    const LON = 24.94;
+    let currentLat = 60.17;
+    let currentLon = 24.94;
 
-    async function fetchWeather() {
+    function changeCity() {
+      const val = document.getElementById("citySelect").value.split(",");
+      currentLat = parseFloat(val[0]);
+      currentLon = parseFloat(val[1]);
+      updateRadar();
+      loadModels();
+    }
+
+    function useGeolocation() {
+      if (!navigator.geolocation) {
+        alert("Paikannus ei ole tuettu selaimessasi.");
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(pos => {
+        currentLat = pos.coords.latitude;
+        currentLon = pos.coords.longitude;
+        updateRadar();
+        loadModels();
+      }, () => alert("Sijaintia ei saatu haettua."));
+    }
+
+    function updateRadar() {
+      document.getElementById("radarFrame").src = 
+        `https://www.rainviewer.com/map.html?loc=${currentLat},${currentLon},8&oFa=0&oC=1&oU=0&oCl=0&c=1&o=83&layer=radar&sm=1&sn=1`;
+    }
+
+    async function loadModels() {
+      const container = document.getElementById("forecastContent");
+      container.innerHTML = '<div class="loading">Päivitetään FMI & Yr -tietoja...</div>';
+
       try {
-        const url = `https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&current=temperature_2m,relative_humidity_2m,precipitation,wind_speed_10m,wind_gusts_10m&wind_speed_unit=ms&timezone=auto`;
-        const res = await fetch(url);
-        const data = await res.json();
-        const cur = data.current;
+        // Haetaan FMI (Harmonie DMI) ja Yr (MET Norway)
+        const urlFmi = `https://api.open-meteo.com/v1/dmi?latitude=${currentLat}&longitude=${currentLon}&hourly=temperature_2m,precipitation,wind_speed_10m,wind_gusts_10m&wind_speed_unit=ms&timezone=auto&forecast_days=3`;
+        const urlYr  = `https://api.open-meteo.com/v1/metno?latitude=${currentLat}&longitude=${currentLon}&hourly=temperature_2m,precipitation,wind_speed_10m,wind_gusts_10m&wind_speed_unit=ms&timezone=auto&forecast_days=3`;
 
-        document.getElementById('curTemp').innerText = `${cur.temperature_2m.toFixed(1)} °C`;
-        document.getElementById('curWind').innerText = `${cur.wind_speed_10m.toFixed(1)} m/s`;
-        document.getElementById('curGust').innerText = `${cur.wind_gusts_10m.toFixed(1)} m/s`;
-        document.getElementById('curHumidity').innerText = `${cur.relative_humidity_2m} %`;
-        document.getElementById('curPrecip').innerText = `${cur.precipitation.toFixed(1)} mm`;
+        const [resFmi, resYr] = await Promise.all([fetch(urlFmi), fetch(urlYr)]);
+        const dataFmi = await resFmi.json();
+        const dataYr  = await resYr.json();
 
+        const hFmi = dataFmi.hourly;
+        const hYr  = dataYr.hourly;
+
+        let html = "";
+        let lastDay = "";
+        const daysFi = ["SU", "MA", "TI", "KE", "TO", "PE", "LA"];
         const now = new Date();
-        document.getElementById('updateTime').innerText = `Päivitetty: ${now.toLocaleTimeString('fi-FI', {hour: '2-digit', minute:'2-digit'})}`;
+
+        let tableOpen = false;
+
+        for (let i = 0; i < hFmi.time.length; i++) {
+          const d = new Date(hFmi.time[i]);
+          if (d.getTime() < now.getTime() - 3600000) continue;
+
+          const dayStr = `${daysFi[d.getDay()]} ${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.`;
+          
+          if (dayStr !== lastDay) {
+            if (tableOpen) html += `</tbody></table>`;
+            html += `<div class="day-header">${dayStr}</div>`;
+            html += `
+              <table class="forecast-table">
+                <thead>
+                  <tr>
+                    <th>Klo</th>
+                    <th style="color:var(--fmi)">FMI °C</th>
+                    <th style="color:var(--yr)">Yr °C</th>
+                    <th style="color:var(--fmi)">FMI mm</th>
+                    <th style="color:var(--yr)">Yr mm</th>
+                    <th>Tuuli (puuska)</th>
+                  </tr>
+                </thead>
+                <tbody>
+            `;
+            tableOpen = true;
+            lastDay = dayStr;
+          }
+
+          const hour = String(d.getHours()).padStart(2, '0') + ":00";
+          const tFmi = hFmi.temperature_2m[i] !== undefined ? hFmi.temperature_2m[i].toFixed(1) : "-";
+          const tYr  = (hYr && hYr.temperature_2m[i] !== undefined) ? hYr.temperature_2m[i].toFixed(1) : "-";
+
+          const rFmi = hFmi.precipitation[i] || 0;
+          const rYr  = (hYr && hYr.precipitation[i]) || 0;
+
+          const rFmiStr = rFmi > 0 ? `<span class="rain-val">${rFmi.toFixed(1)}</span>` : `<span class="rain-dry">0</span>`;
+          const rYrStr  = rYr > 0  ? `<span class="rain-val">${rYr.toFixed(1)}</span>`  : `<span class="rain-dry">0</span>`;
+
+          const wSpeed = hFmi.wind_speed_10m[i] ? hFmi.wind_speed_10m[i].toFixed(0) : "0";
+          const wGust  = hFmi.wind_gusts_10m[i] ? hFmi.wind_gusts_10m[i].toFixed(0) : "0";
+
+          html += `
+            <tr>
+              <td class="col-time">${hour}</td>
+              <td class="temp-fmi">${tFmi}°</td>
+              <td class="temp-yr">${tYr}°</td>
+              <td class="rain-cell">${rFmiStr}</td>
+              <td class="rain-cell">${rYrStr}</td>
+              <td class="wind-cell">💨 ${wSpeed} (${wGust})</td>
+            </tr>
+          `;
+        }
+
+        if (tableOpen) html += `</tbody></table>`;
+
+        container.innerHTML = html;
+        const nowTime = new Date().toLocaleTimeString('fi-FI', {hour: '2-digit', minute:'2-digit'});
+        document.getElementById("updateNotice").innerText = `Päivitetty klo ${nowTime} | Mallit: FMI (Harmonie) & Yr (MET Norway)`;
+
       } catch (err) {
-        document.getElementById('updateTime').innerText = 'Tietojen haku epäonnistui.';
+        container.innerHTML = '<div class="loading">Virhe haettaessa tietoja. Yritä hetken kuluttua uudelleen.</div>';
       }
     }
 
-    fetchWeather();
-    setInterval(fetchWeather, 300000);
+    loadModels();
   </script>
 </body>
 </html>
