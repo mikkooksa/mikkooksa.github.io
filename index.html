@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kelikooste</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --text: #f8fafc;
+      --text-dim: #94a3b8;
+      --accent: #38bdf8;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .container {
+      width: 100%;
+      max-width: 480px;
+    }
+    header {
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+    h1 { margin: 0; font-size: 1.5rem; }
+    .station-name { color: var(--accent); font-size: 0.9rem; }
+    .card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 18px;
+      margin-bottom: 12px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+    }
+    .temp-hero {
+      font-size: 3rem;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1;
+      margin: 8px 0;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .metric {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .label { font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; }
+    .val { font-size: 1.1rem; font-weight: 600; }
+    .radar-frame {
+      width: 100%;
+      height: 320px;
+      border: none;
+      border-radius: 12px;
+      margin-top: 6px;
+    }
+    .updated {
+      text-align: center;
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      margin-top: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Sää & Keli</h1>
+      <span id="locName" class="station-name">Helsinki / Espoo</span>
+    </header>
+
+    <div class="card">
+      <div class="label">Lämpötila nyt</div>
+      <div class="temp-hero" id="curTemp">-- °C</div>
+      <div class="grid" style="margin-top: 14px;">
+        <div class="metric">
+          <span class="label">Tuuli</span>
+          <span class="val" id="curWind">-- m/s</span>
+        </div>
+        <div class="metric">
+          <span class="label">Tuulenpuuska</span>
+          <span class="val" id="curGust">-- m/s</span>
+        </div>
+        <div class="metric">
+          <span class="label">Kosteus</span>
+          <span class="val" id="curHumidity">-- %</span>
+        </div>
+        <div class="metric">
+          <span class="label">Sademäärä (1h)</span>
+          <span class="val" id="curPrecip">-- mm</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="padding: 12px;">
+      <div class="label" style="margin-bottom: 8px;">Sadetutka</div>
+      <iframe class="radar-frame" src="https://www.rainviewer.com/map.html?loc=60.1699,24.9384,8&oFa=0&oC=1&oU=0&oCl=0&c=1&o=83&layer=radar&sm=1&sn=1"></iframe>
+    </div>
+
+    <div class="updated" id="updateTime">Päivitetään tietoja...</div>
+  </div>
+
+  <script>
+    const LAT = 60.17;
+    const LON = 24.94;
+
+    async function fetchWeather() {
+      try {
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&current=temperature_2m,relative_humidity_2m,precipitation,wind_speed_10m,wind_gusts_10m&wind_speed_unit=ms&timezone=auto`;
+        const res = await fetch(url);
+        const data = await res.json();
+        const cur = data.current;
+
+        document.getElementById('curTemp').innerText = `${cur.temperature_2m.toFixed(1)} °C`;
+        document.getElementById('curWind').innerText = `${cur.wind_speed_10m.toFixed(1)} m/s`;
+        document.getElementById('curGust').innerText = `${cur.wind_gusts_10m.toFixed(1)} m/s`;
+        document.getElementById('curHumidity').innerText = `${cur.relative_humidity_2m} %`;
+        document.getElementById('curPrecip').innerText = `${cur.precipitation.toFixed(1)} mm`;
+
+        const now = new Date();
+        document.getElementById('updateTime').innerText = `Päivitetty: ${now.toLocaleTimeString('fi-FI', {hour: '2-digit', minute:'2-digit'})}`;
+      } catch (err) {
+        document.getElementById('updateTime').innerText = 'Tietojen haku epäonnistui.';
+      }
+    }
+
+    fetchWeather();
+    setInterval(fetchWeather, 300000);
+  </script>
+</body>
+</html>
