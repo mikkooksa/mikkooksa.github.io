@@ -95,13 +95,13 @@
       background: #1a253c;
       color: var(--muted);
       font-weight: 600;
-      padding: 6px 4px;
+      padding: 6px 3px;
       font-size: 11px;
       text-align: center;
       border-bottom: 1px solid var(--border);
     }
     .forecast-table td {
-      padding: 8px 4px;
+      padding: 7px 3px;
       text-align: center;
       border-bottom: 1px solid #1c273e;
       font-size: 12px;
@@ -110,14 +110,14 @@
     .col-time {
       font-weight: 700;
       color: var(--text);
-      width: 14%;
+      width: 13%;
     }
     .temp-fmi { color: var(--fmi); font-weight: 700; width: 14%; }
     .temp-yr { color: var(--yr); font-weight: 700; width: 14%; }
     .rain-cell { width: 14%; font-size: 11px; }
     .rain-val { color: var(--rain); font-weight: 600; }
     .rain-dry { color: #475569; }
-    .wind-cell { width: 22%; font-size: 11px; color: var(--wind); }
+    .wind-cell { width: 23%; font-size: 11px; color: var(--wind); }
 
     .radar-box {
       margin-top: 14px;
@@ -163,22 +163,20 @@
       <button class="gps-btn" onclick="useGeolocation()">📍 Sijainti</button>
     </header>
 
-    <!-- Selitevärit -->
     <div class="legend-bar">
-      <span class="legend-fmi">■ FMI (Suomi)</span>
-      <span class="legend-yr">■ Yr (Norja)</span>
+      <span class="legend-fmi">■ FMI / ECMWF</span>
+      <span class="legend-yr">■ Yr / MET Norway</span>
     </div>
 
     <div id="forecastContent">
       <div class="loading">Haetaan FMI & Yr -ennusteita...</div>
     </div>
 
-    <!-- Sadetutka -->
     <div class="radar-box">
       <iframe id="radarFrame" src="https://www.rainviewer.com/map.html?loc=60.17,24.94,8&oFa=0&oC=1&oU=0&oCl=0&c=1&o=83&layer=radar&sm=1&sn=1"></iframe>
     </div>
 
-    <div class="footer-note" id="updateNotice">Lähde: Ilmatieteen laitos (DMI/FMI) & MET Norway (Yr)</div>
+    <div class="footer-note" id="updateNotice">Lähde: FMI/ECMWF & MET Norway (Yr)</div>
   </div>
 
   <script>
@@ -216,26 +214,28 @@
       container.innerHTML = '<div class="loading">Päivitetään FMI & Yr -tietoja...</div>';
 
       try {
-        // Haetaan FMI (Harmonie DMI) ja Yr (MET Norway)
-        const urlFmi = `https://api.open-meteo.com/v1/dmi?latitude=${currentLat}&longitude=${currentLon}&hourly=temperature_2m,precipitation,wind_speed_10m,wind_gusts_10m&wind_speed_unit=ms&timezone=auto&forecast_days=3`;
-        const urlYr  = `https://api.open-meteo.com/v1/metno?latitude=${currentLat}&longitude=${currentLon}&hourly=temperature_2m,precipitation,wind_speed_10m,wind_gusts_10m&wind_speed_unit=ms&timezone=auto&forecast_days=3`;
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${currentLat}&longitude=${currentLon}&hourly=temperature_2m,precipitation,wind_speed_10m,wind_gusts_10m&models=best_match,metno_seamless&wind_speed_unit=ms&timezone=auto&forecast_days=3`;
 
-        const [resFmi, resYr] = await Promise.all([fetch(urlFmi), fetch(urlYr)]);
-        const dataFmi = await resFmi.json();
-        const dataYr  = await resYr.json();
+        const res = await fetch(url);
+        const data = await res.json();
+        const h = data.hourly;
 
-        const hFmi = dataFmi.hourly;
-        const hYr  = dataYr.hourly;
+        const times = h.time;
+        const tFmiList = h.temperature_2m_best_match || h.temperature_2m;
+        const tYrList  = h.temperature_2m_metno_seamless || [];
+        const rFmiList = h.precipitation_best_match || h.precipitation;
+        const rYrList  = h.precipitation_metno_seamless || [];
+        const wSpeedList = h.wind_speed_10m_best_match || h.wind_speed_10m;
+        const wGustList  = h.wind_gusts_10m_best_match || h.wind_gusts_10m;
 
         let html = "";
         let lastDay = "";
         const daysFi = ["SU", "MA", "TI", "KE", "TO", "PE", "LA"];
         const now = new Date();
-
         let tableOpen = false;
 
-        for (let i = 0; i < hFmi.time.length; i++) {
-          const d = new Date(hFmi.time[i]);
+        for (let i = 0; i < times.length; i++) {
+          const d = new Date(times[i]);
           if (d.getTime() < now.getTime() - 3600000) continue;
 
           const dayStr = `${daysFi[d.getDay()]} ${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.`;
@@ -262,17 +262,17 @@
           }
 
           const hour = String(d.getHours()).padStart(2, '0') + ":00";
-          const tFmi = hFmi.temperature_2m[i] !== undefined ? hFmi.temperature_2m[i].toFixed(1) : "-";
-          const tYr  = (hYr && hYr.temperature_2m[i] !== undefined) ? hYr.temperature_2m[i].toFixed(1) : "-";
+          const tFmi = tFmiList[i] !== undefined && tFmiList[i] !== null ? tFmiList[i].toFixed(1) : "-";
+          const tYr  = tYrList[i] !== undefined && tYrList[i] !== null ? tYrList[i].toFixed(1) : "-";
 
-          const rFmi = hFmi.precipitation[i] || 0;
-          const rYr  = (hYr && hYr.precipitation[i]) || 0;
+          const rFmi = rFmiList[i] || 0;
+          const rYr  = rYrList[i] || 0;
 
           const rFmiStr = rFmi > 0 ? `<span class="rain-val">${rFmi.toFixed(1)}</span>` : `<span class="rain-dry">0</span>`;
           const rYrStr  = rYr > 0  ? `<span class="rain-val">${rYr.toFixed(1)}</span>`  : `<span class="rain-dry">0</span>`;
 
-          const wSpeed = hFmi.wind_speed_10m[i] ? hFmi.wind_speed_10m[i].toFixed(0) : "0";
-          const wGust  = hFmi.wind_gusts_10m[i] ? hFmi.wind_gusts_10m[i].toFixed(0) : "0";
+          const wSpeed = wSpeedList[i] !== undefined ? wSpeedList[i].toFixed(0) : "0";
+          const wGust  = wGustList[i] !== undefined ? wGustList[i].toFixed(0) : "0";
 
           html += `
             <tr>
@@ -290,10 +290,10 @@
 
         container.innerHTML = html;
         const nowTime = new Date().toLocaleTimeString('fi-FI', {hour: '2-digit', minute:'2-digit'});
-        document.getElementById("updateNotice").innerText = `Päivitetty klo ${nowTime} | Mallit: FMI (Harmonie) & Yr (MET Norway)`;
+        document.getElementById("updateNotice").innerText = `Päivitetty klo ${nowTime} | Mallit: FMI (ECMWF) & Yr (MET Norway)`;
 
       } catch (err) {
-        container.innerHTML = '<div class="loading">Virhe haettaessa tietoja. Yritä hetken kuluttua uudelleen.</div>';
+        container.innerHTML = `<div class="loading">Virhe haettaessa tietoja: ${err.message}. Yritä hetken kuluttua uudelleen.</div>`;
       }
     }
 
@@ -301,3 +301,4 @@
   </script>
 </body>
 </html>
+
